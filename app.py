@@ -1,16 +1,21 @@
 from fastapi import FastAPI, Depends
 from insights.service import InsightsService
 from insights.router import router as insights_router
+from insights.business_insights_agent import BusinessInsightsAgent
+from insights.sql_generation_agent import SQLGenerationAgent
 from contextlib import asynccontextmanager
 import uvicorn
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create the service instance
-    insights_service = InsightsService()
-    # Set it in the app state
-    app.state.insights_service = insights_service
-    yield
+    business_insights_agent = BusinessInsightsAgent(bq_project_id="marketfeed-stage", gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I")
+    sql_generation_agent = SQLGenerationAgent(gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I")
+    insights_service = InsightsService(business_insights_agent, sql_generation_agent)
+    
+    yield {
+        "insights_service": insights_service
+    }
     # Cleanup (if needed)
     app.state.insights_service = None
 

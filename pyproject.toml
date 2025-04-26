@@ -3,5 +3,5 @@ name = "insight-generator"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = ["fastapi[standard]>=0.115.6","google-generativeai>=0.3.0"]
+requires-python = ">=3.11"
+dependencies = ["fastapi[standard]>=0.115.6","google-generativeai>=0.3.0", "google-cloud-bigquery", "db-dtypes", "pandas", "tabulate"]

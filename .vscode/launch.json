@@ -1,0 +1,11 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "dev",
+            "request": "launch",
+            "program": "${workspaceFolder}/app/app.py",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
