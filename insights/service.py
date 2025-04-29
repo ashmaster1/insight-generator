@@ -1,18 +1,25 @@
 import os
+import json
 import google.generativeai as genai
 from insights.business_insights_agent import BusinessInsightsAgent
 from insights.sql_generation_agent import SQLGenerationAgent
+from insights.business_head_agent import BusinessHeadAgent  # <-- Add this import
 
 class InsightsService:
-    def __init__(self, business_insights_agent: BusinessInsightsAgent, sql_generation_agent: SQLGenerationAgent):
+    def __init__(
+        self,
+        business_insights_agent: BusinessInsightsAgent,
+        sql_generation_agent: SQLGenerationAgent,
+        business_head_agent: BusinessHeadAgent  # <-- Add this parameter
+    ):
         self.prompt_file = "prompt.md"
         self.business_insights_agent = business_insights_agent
         self.sql_generation_agent = sql_generation_agent
-        # Configure the library with your API key
+        self.business_head_agent = business_head_agent  # <-- Store the agent
         genai.configure(api_key="AIzaSyAlUonPo28IYiA3z5OhQy97pS3pEJoItvU")
         self.model = genai.GenerativeModel('gemini-2.0-flash')
     
-    def get_insights(self, prompt: str) -> str:
+    def get_insights(self, prompt: str, elaboration:str) -> str:
         """
         Generates insights based on the provided prompt.
         Args:
@@ -20,10 +27,28 @@ class InsightsService:
         Returns:
             A string containing the generated insights.
         """
-        # response = self.model.generate_content(prompt)
-        return self.sql_generation_agent.generate_sql(prompt)
-        # sql = "SELECT * FROM marketfeed-stage.servetel.rm_assigned_users WHERE ACTIVATED_DATE BETWEEN '2022-01-01' AND '2023-12-31' LIMIT 20;"
-        # return self.business_insights_agent.analyze(sql, "Which month had the most activations?")
+        sql_generator_text = self.sql_generation_agent.generate_sql(elaboration)
+        
+        # Extract JSON from markdown code block
+        if sql_generator_text.startswith("```json"):
+            json_str = sql_generator_text.strip().split('\n', 1)[1]
+            json_str = json_str.rsplit('```', 1)[0]
+        else:
+            json_str = sql_generator_text
+
+        sql_json = json.loads(json_str)
+        print(sql_json)
+        return self.business_insights_agent.analyze(sql_json["sql"], prompt, gcs_bucket="data_pulled")
+
+    def elaborate_business_head_query(self, user_query: str) -> str:
+        """
+        Uses the BusinessHeadAgent to elaborate a business head query.
+        """
+        elaboration = self.business_head_agent.elaborate_query(user_query)
+        return {
+            "prompt": user_query,
+            "elaboration": elaboration.replace("markdown\n", "").replace("```", ""),
+        }
 
     # def read_prompt_file(self) -> str:
     #     """

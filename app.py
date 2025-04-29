@@ -4,14 +4,28 @@ from insights.router import router as insights_router
 from insights.business_insights_agent import BusinessInsightsAgent
 from insights.sql_generation_agent import SQLGenerationAgent
 from contextlib import asynccontextmanager
+from insights.business_head_agent import BusinessHeadAgent
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create the service instance
-    business_insights_agent = BusinessInsightsAgent(bq_project_id="marketfeed-stage", gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I")
-    sql_generation_agent = SQLGenerationAgent(gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I")
-    insights_service = InsightsService(business_insights_agent, sql_generation_agent)
+    business_insights_agent = BusinessInsightsAgent(
+        bq_project_id="marketfeed-stage",
+        gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I"
+    )
+    sql_generation_agent = SQLGenerationAgent(
+        gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I"
+    )
+    business_head_agent = BusinessHeadAgent(
+        gemini_api_key="AIzaSyBqoN0HnXFg5s3VJZdHUPBwLEPK4O2j83I"
+    )
+    insights_service = InsightsService(
+        business_insights_agent,
+        sql_generation_agent,
+        business_head_agent  # <-- Pass the new agent
+    )
     
     yield {
         "insights_service": insights_service
@@ -21,6 +35,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Or specify your frontend's URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(insights_router)
